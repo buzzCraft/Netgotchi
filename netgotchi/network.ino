@@ -176,47 +176,68 @@ void pingNetwork(int i) {
 
 
 bool detectEvilTwin() {
-  int numNetworks = WiFi.scanNetworks();
-  int ssid_count = 0;
-  bool currentEvilTwinStatus = false;
+    int numNetworks = WiFi.scanNetworks();
+    int ssid_count = 0;
+    bool currentEvilTwinStatus = false;
 
-  for (int i = 0; i < numNetworks; i++) {
-    String ssid = WiFi.SSID(i);
+    for (int i = 0; i < numNetworks; i++) {
+        String ssid = WiFi.SSID(i);
+        String macAddress = WiFi.BSSIDstr(i); // Get the MAC address of the network
 
-    if (ssid == knownNetworks[0].ssid) {
-        ssid_count++;
+        // Check if the MAC address is in the whitelist
+        bool isWhitelisted = false;
+        for (int j = 0; j < allowedMacCount; j++) {
+            if (macAddress == allowedMacs[j]) {
+                isWhitelisted = true;
+                break;
+            }
+        }
+
+        // Count SSIDs based on the whitelist status
+        if (!isWhitelisted && ssid == knownNetworks[0].ssid) {
+            ssid_count++;
+        }
     }
-  }
-  if (ssid_count> 1 ) currentEvilTwinStatus = true;
 
-  if (currentEvilTwinStatus != evilTwinDetected) {
-    if (currentEvilTwinStatus) {
-      SerialPrintLn("Evil Twin appeared");
+    // If the MAC address list is empty, fallback to checking SSID count
+    if (allowedMacCount == 0) {
+        if (numNetworks > 1) { // Check total networks instead of ssid_count
+            currentEvilTwinStatus = true;
+        }
     } else {
-      SerialPrintLn("Evil Twin disappeared");
+        if (ssid_count > 1) {
+            currentEvilTwinStatus = true;
+        }
     }
-  }
-  return currentEvilTwinStatus;
+
+    if (currentEvilTwinStatus != evilTwinDetected) {
+        if (currentEvilTwinStatus) {
+            SerialPrintLn("Evil Twin appeared");
+        } else {
+            SerialPrintLn("Evil Twin disappeared");
+        }
+    }
+    return currentEvilTwinStatus;
 }
 
 
 int scanForDangerousServices(IPAddress ip) {
-  WiFiClient client;
-  for (int i = 0; i < sizeof(dangerousServices) / sizeof(dangerousServices[0]); ++i) {
-    if (skipFTPScan && dangerousServices[i].name == "FTP") continue;
-    if (client.connect(ip, dangerousServices[i].port)) {
-      SerialPrintLn("Open port found: ");
-      SerialPrintLn(dangerousServices[i].name);
-      SerialPrintLn(" (");
-      SerialPrintLn(dangerousServices[i].port);
-      SerialPrintLn(") on ");
-      SerialPrintLn(ip);
-      client.stop();
-      vulnerabilitiesFound++;
-      return 1;
+    WiFiClient client;
+    for (int i = 0; i < sizeof(dangerousServices) / sizeof(dangerousServices[0]); ++i) {
+        if (skipFTPScan && dangerousServices[i].name == "FTP") continue;
+        if (client.connect(ip, dangerousServices[i].port)) {
+            SerialPrintLn("Open port found: ");
+            SerialPrintLn(dangerousServices[i].name);
+            SerialPrintLn(" (");
+            SerialPrintLn(dangerousServices[i].port);
+            Serial.print(") on ");
+            Serial.println(ip);
+            client.stop();
+            vulnerabilitiesFound++;
+            return 1;
+        }
     }
-  }
-  return 0;
+    return 0;
 }
 
 

@@ -146,11 +146,22 @@ const int flashButtonPin = 0;  // GPIO0 is connected to the flash button
 
 WiFiManager wifiManager;
 
-bool useWifiManager = true;
+bool useWifiManager = false;
 int wifiManagertimeout = 360;  // seconds to run for
 
 const char* ssid = "";
 const char* password = "";
+
+// Define a whitelist of MAC addresses globally
+// set as 
+// "FF:FF:FF:FF:FF:01",
+// "FF:FF:FF:FF:FF:02,
+// "FF:FF:FF:FF:FF:03"
+// For a mesh network with three nodes (replace mac addresses with the real ones)
+const char* allowedMacs[] = {
+
+};
+const int allowedMacCount = sizeof(allowedMacs) / sizeof(allowedMacs[0]);
 
 bool enableNetworkMode = true;
 bool shouldSaveConfig = false;
@@ -432,3 +443,5 @@ void netgotchi_loop()
   if (headless) headlessInfo();
   delay(15);
 }
+
+
